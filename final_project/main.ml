@@ -13,20 +13,20 @@ module WasRun = struct
       let (s', v) = m s in
       f v s'
 
-  let wasRun (numRunsCurrent) = fun numRuns -> (numRuns, numRunsCurrent > 0)
-  let testMethod (_) = fun numRuns -> (numRuns + 1, numRuns + 1)
+  let wasRun (previousResult) = fun () -> ((), previousResult)
+  let testMethod = fun () -> ((), true)
 
-  let run_state i = let (s, v) = i (0) in v
+  let run_state i = let (s, v) = i () in v
 end
 
 
 module TestCaseTest = struct
     let (let*) = WasRun.( >>= )
     let testRunning () =
-        let program = WasRun.wasRun 0 in
+        let program = WasRun.wasRun false in
         let _ = asrt (not (TestCase.run WasRun.run_state program), "It should have begun with no runs") in
         let program =
-            let* testMethod = WasRun.testMethod () in
+            let* testMethod = WasRun.testMethod in
             WasRun.wasRun testMethod in
         asrt (TestCase.run WasRun.run_state program, "It should have run at least once")
 
