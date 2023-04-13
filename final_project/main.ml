@@ -2,20 +2,11 @@ let asrt = function
  | (true,_) -> ()
  | (false, str) -> failwith ("Assertion failure: "^str)
 
-(*module type WASRUN = sig*)
-(*  type runCount = int*)
-(*  type analysis = runCount * (unit -> unit)*)
-
-(*  val init : (unit -> unit) -> analysis*)
-(*  val wasRun : analysis -> bool*)
-(*  val testMethod : analysis -> analysis*)
-
-(*  val run : analysis -> analysis*)
-(*end*)
 
 module TestCase = struct
   let run run_state program = run_state program
 end
+
 
 module WasRun = struct
   let ( >>= ) m f = fun s ->
@@ -38,6 +29,8 @@ module TestCaseTest = struct
             let* testMethod = WasRun.testMethod () in
             WasRun.wasRun testMethod in
         asrt (TestCase.run WasRun.run_state program, "It should have run at least once")
+
+    let run_state i = i ()
 end
 
-let _ = TestCaseTest.testRunning()
+let _ = TestCase.run TestCaseTest.run_state TestCaseTest.testRunning
