@@ -13,6 +13,8 @@ module WasRun = struct
 
   let testMethod () = fun (_, log, result) -> ((true, log^"testMethod ", result), ())
 
+  let testBrokenMethod () = fun _ -> failwith "Broken method"
+
   let return r = fun state -> (state, r)
   let ( >>= ) m f = fun s ->
       let (s', v) = m s in

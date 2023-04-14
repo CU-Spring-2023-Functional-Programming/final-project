@@ -2,3 +2,4 @@
 
 let _ = TestCaseTest.run TestCaseTest.testTemplateMethod
 let _ = TestCaseTest.run TestCaseTest.testResult
+let _ = TestCaseTest.run TestCaseTest.testFailedResult
