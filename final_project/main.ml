@@ -4,37 +4,36 @@ let asrt = function
 
 
 module Result = struct
-  let init = ((), ())
+  let init = (0, 0)
 
-  let getSummary () = fun (_, _) -> ((), "1 run, 0 failed")
+  let getSummary (runCount, failedCount) = (string_of_int runCount)^" run, 0 failed"
 
-  let ( >>= ) m f = fun s ->
-      let (s', v) = m s in
-      f v s'
-  let run main =
-    let (state, r) = main init in
-    r
+  let incrementRunCount (runCount, failedCount) = (runCount + 1, failedCount)
 end
 
 
 module WasRun = struct
-  let setUp () = fun (wasRun, log) -> ((wasRun, log^"setUp "), ())
-  let tearDown () = fun (wasRun, log) -> ((wasRun, log^"tearDown "), ())
-  let init = (false, "")
+  let setUp () = fun (wasRun, log, result) -> ((wasRun, log^"setUp ", result), ())
+  let tearDown () = fun (wasRun, log, result) -> ((wasRun, log^"tearDown ", result), ())
+  let init = (false, "", Result.init)
 
-  let getWasRun () = fun (wasRun, log) -> ((wasRun, log), wasRun)
-  let getLog () = fun (wasRun, log) -> ((wasRun, log), log)
-  let getResult () = fun state -> (state, Result.run (Result.getSummary()))
+  let getWasRun () = fun (wasRun, log, result) -> ((wasRun, log, result), wasRun)
+  let getLog () = fun (wasRun, log, result) -> ((wasRun, log, result), log)
+  let getResult () = fun (wasRun, log, result) -> ((wasRun, log, result), result)
 
-  let testMethod () = fun (_, log) -> ((true, log^"testMethod "), ())
+  let recordStarted () = fun (wasRun, log, result) -> ((wasRun, log, Result.incrementRunCount(result)), ())
 
+  let testMethod () = fun (_, log, result) -> ((true, log^"testMethod ", result), ())
+
+  let return r = fun state -> (state, r)
   let ( >>= ) m f = fun s ->
       let (s', v) = m s in
       f v s'
   let run finalValueGetter main =
     let packagedProgram = begin
       let (let*) = ( >>= ) in
-      let* r = setUp() in
+      let* r = recordStarted() in
+      let* r = setUp r in
       let* r = main r in
       let* r = tearDown r in
       finalValueGetter r
@@ -53,7 +52,12 @@ module TestCaseTest = struct
     ((), ())
 
   let testResult () = fun (_) ->
-    let result = WasRun.run WasRun.getResult WasRun.testMethod in
+    let resultSummaryGetter () = begin
+      let (let*) = WasRun.( >>= ) in
+      let* result = WasRun.getResult () in
+      WasRun.return @@ Result.getSummary result
+    end in
+    let result = WasRun.run resultSummaryGetter WasRun.testMethod in
     let _ = asrt ("1 run, 0 failed" = result, "It should have returned the correct result summary. Returned summary was: "^result) in
     ((), ())
 
