@@ -4,48 +4,49 @@ let asrt = function
 
 
 module WasRun = struct
-  let setUp = fun (wasRun, _) -> ((wasRun, true), ())
+  let setUp () = fun (wasRun, log) -> ((wasRun, log^"setUp "), ())
+  let tearDown () = fun (wasRun, log) -> ((wasRun, log^"tearDown "), ())
+  let init = (false, "")
 
-  let wasRun () = fun (wasRun, wasSetUp) -> ((wasRun, wasSetUp), wasRun)
-  let wasSetUp () = fun (wasRun, wasSetUp) -> ((wasRun, wasSetUp), wasSetUp)
-  let testMethod = fun (_, wasSetUp) -> ((true, wasSetUp), ())
-
-  let init = (false, false)
-  let run program =
-    let (state1, _) = setUp init in
-    let (state2, result) = program state1 in result
+  let testMethod () = fun (_, log) -> ((true, log^"testMethod "), ())
 
   let ( >>= ) m f = fun s ->
       let (s', v) = m s in
       f v s'
+  let run program =
+    let go = begin
+        let (let*) = ( >>= ) in
+        let* r1 = setUp() in
+        let* r2 = program r1 in
+        tearDown r2
+    end in
+    go init
 end
 
 
 module TestCaseTest = struct
-    let setUp = fun (_) ->
-        let (let*) = WasRun.( >>= ) in
-        let program = begin
-            let* testMethod = WasRun.testMethod in
-            WasRun.wasRun testMethod
-        end in (program, ())
+    let setUp () = fun (_) -> ((), ())
+    let tearDown () = fun (_) -> ((), ())
+    let init = ()
 
-    let testRunning = fun program ->
-        let _ = asrt (WasRun.run program, "It should have run") in
-        (program, ())
-
-    let testSetUp = fun program ->
-        let _ = asrt (WasRun.run program, "It should have been set up") in
-        (program, ())
-
-  let init = ()
-  let run program =
-    let (state1, _) = setUp init in
-    let (state2, result) = program state1 in result
+    let getWasRun ((wasRun, log), ()) = wasRun
+    let getLog ((wasRun, log), ()) = log
+    let testTemplateMethod () = fun (_) ->
+        let result = getLog (WasRun.run WasRun.testMethod) in
+        let _ = asrt ("setUp testMethod tearDown " = result, "Should have run the correct methods. Methods called were: "^result) in
+        ((), ())
 
   let ( >>= ) m f = fun s ->
       let (s', v) = m s in
       f v s'
+  let run program =
+      let go = begin
+          let (let*) = ( >>= ) in
+          let* r1 = setUp() in
+          let* r2 = program r1 in
+          tearDown r2
+      end in
+      go init
 end
 
-let _ = TestCaseTest.run TestCaseTest.testRunning
-let _ = TestCaseTest.run TestCaseTest.testSetUp
+let _ = TestCaseTest.run TestCaseTest.testTemplateMethod
