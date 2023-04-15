@@ -41,10 +41,10 @@ module TestCaseTest = struct
     (state, testResult, ())
 
   include TestCase(struct
-    type stateType = (string * string) list
+    type stateType = unit
     type testResultType = int * int
 
-    let initState = []
+    let initState = ()
     let setUp () = fun (state, testResult) -> (state, testResult, ())
     let tearDown () = fun (state, testResult) -> (state, testResult, ())
   end)
