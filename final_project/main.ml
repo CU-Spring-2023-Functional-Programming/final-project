@@ -5,8 +5,6 @@
 #use "WasRun.ml";;
 #use "TestCaseTest.ml";;
 
-TestCaseTest.run TestCaseTest.getResult TestCaseTest.testTemplateMethod TestResult.init;;
-
 let main =
   let (let*) = TestSuite.( >>= ) in
   let* _ = TestSuite.add (TestCaseTest.run TestCaseTest.getResult TestCaseTest.testTemplateMethod) in
