@@ -41,12 +41,11 @@ module TestCaseTest = struct
       let* v = TestSuite.add (WasRun.run WasRun.getResult WasRun.testMethod) () in
       TestSuite.add (WasRun.run WasRun.getResult WasRun.testBrokenMethod) v
     end in
-    let result = TestSuite.run (TestSuite.getResult) (main) (TestResult.init) in
+    let result = TestSuite.run TestSuite.getResult main TestResult.init in
     let summary = TestResult.getSummary result in
     let _ = asrt ("2 run, 1 failed" = summary, "It should have two runs and one failed run. Returned summary was: "^summary) in
     (state, testResult, ())
 
-  let init = (initState, TestResult.init)
   let getResult () = fun (state, testResult) -> (state, testResult, testResult)
   let recordStarted () = fun (state, testResult) -> (state, TestResult.testStarted(testResult), ())
   let recordFailed () = fun (state, testResult) -> (state, TestResult.testFailed(testResult), ())
@@ -54,18 +53,17 @@ module TestCaseTest = struct
   let ( >>= ) m f = fun s ->
     let (s', r, v) = m s in
     f v (s', r)
-  let run finalValueGetter main =
+  let run finalValueGetter main testResult =
     let packagedProgram = begin
       let (let*) = ( >>= ) in
       let* v = recordStarted() in
       let* v = setUp v in
-      let* v = main v in
-(*      let* v = fun s ->*)
-(*        try*)
-(*        	main v s*)
-(*        with _ -> recordFailed v s*)
-(*      in*)
+      let* v = fun s ->
+        try
+        	main v s
+        with _ -> recordFailed v s
+      in
       let* v = tearDown v in
       finalValueGetter v
-    end in let (state, testResult, v) = packagedProgram init in v
+    end in let (state, testResult, v) = packagedProgram (initState, testResult) in v
 end
