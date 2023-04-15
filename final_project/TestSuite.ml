@@ -1,5 +1,3 @@
-#use "TestResult.ml";;
-
 module TestSuite = struct
   let initState = ([])
 

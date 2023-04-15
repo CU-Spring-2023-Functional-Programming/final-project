@@ -1,11 +1,5 @@
-#use "WasRun.ml";;
-#use "TestSuite.ml";;
-#use "utilities.ml";;
-
 module TestCaseTest = struct
-  let setUp () = fun (state, testResult) -> (state, testResult, ())
-  let tearDown () = fun (state, testResult) -> (state, testResult, ())
-  let initState = ()
+  open TestUtilities
 
   let resultSummaryGetter () =
     let (let*) = WasRun.( >>= ) in
@@ -46,24 +40,12 @@ module TestCaseTest = struct
     let _ = asrt ("2 run, 1 failed" = summary, "It should have two runs and one failed run. Returned summary was: "^summary) in
     (state, testResult, ())
 
-  let getResult () = fun (state, testResult) -> (state, testResult, testResult)
-  let recordStarted () = fun (state, testResult) -> (state, TestResult.testStarted(testResult), ())
-  let recordFailed () = fun (state, testResult) -> (state, TestResult.testFailed(testResult), ())
-  let return v = fun (state, testResult) -> (state, testResult, v)
-  let ( >>= ) m f = fun s ->
-    let (s', r, v) = m s in
-    f v (s', r)
-  let run finalValueGetter main testResult =
-    let packagedProgram = begin
-      let (let*) = ( >>= ) in
-      let* v = recordStarted() in
-      let* v = setUp v in
-      let* v = fun s ->
-        try
-        	main v s
-        with _ -> recordFailed v s
-      in
-      let* v = tearDown v in
-      finalValueGetter v
-    end in let (state, testResult, v) = packagedProgram (initState, testResult) in v
+  include TestCase(struct
+    type stateType = (string * string) list
+    type testResultType = int * int
+
+    let initState = []
+    let setUp () = fun (state, testResult) -> (state, testResult, ())
+    let tearDown () = fun (state, testResult) -> (state, testResult, ())
+  end)
 end
