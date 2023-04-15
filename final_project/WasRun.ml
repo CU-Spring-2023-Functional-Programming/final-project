@@ -15,19 +15,22 @@ module WasRun = struct
 
   let init = (initState, TestResult.init)
   let recordStarted () = fun (state, testResult) -> (state, TestResult.testStarted(testResult), ())
-  let recordFailed () = fun (state, testResult) -> (state, TestResult.testFailed(testResult), "something wrong")
+  let recordFailed () = fun (state, testResult) -> (state, TestResult.testFailed(testResult), ())
   let return v = fun (state, testResult) -> (state, testResult, v)
   let ( >>= ) m f = fun s ->
-    try
-      let (s', r, v) = m s in
-      f v (s', r)
-    with _ -> recordFailed() s
+    let (s', r, v) = m s in
+    f v (s', r)
   let run finalValueGetter main =
     let packagedProgram = begin
       let (let*) = ( >>= ) in
       let* v = recordStarted() in
       let* v = setUp v in
-      let* v = main v in
+      let* v = fun s ->
+        try
+        	main v s
+        with
+        	| _ -> recordFailed() s
+      in
       let* v = tearDown v in
       finalValueGetter v
     end in let (state, testResult, v) = packagedProgram init in v
