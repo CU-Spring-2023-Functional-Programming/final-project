@@ -28,8 +28,7 @@ module WasRun = struct
       let* v = fun s ->
         try
         	main v s
-        with
-        	| _ -> recordFailed() s
+        with _ -> recordFailed v s
       in
       let* v = tearDown v in
       finalValueGetter v
