@@ -1,31 +1,34 @@
-#use "Result.ml";;
+#use "TestResult.ml";;
 
 module WasRun = struct
-  let setUp () = fun (wasRun, log, result) -> ((wasRun, log^"setUp ", result), ())
-  let tearDown () = fun (wasRun, log, result) -> ((wasRun, log^"tearDown ", result), ())
-  let init = (false, "", Result.init)
+  let setUp () = fun ((wasRun, log), testResult) -> ((wasRun, log^"setUp "), testResult, ())
+  let tearDown () = fun ((wasRun, log), testResult) -> ((wasRun, log^"tearDown "), testResult, ())
+  let initState = (false, "")
 
-  let getWasRun () = fun (wasRun, log, result) -> ((wasRun, log, result), wasRun)
-  let getLog () = fun (wasRun, log, result) -> ((wasRun, log, result), log)
-  let getResult () = fun (wasRun, log, result) -> ((wasRun, log, result), result)
+  let getWasRun () = fun ((wasRun, log), testResult) -> ((wasRun, log), testResult, wasRun)
+  let getLog () = fun ((wasRun, log), testResult) -> ((wasRun, log), testResult, log)
+  let getResult () = fun ((wasRun, log), testResult) -> ((wasRun, log), testResult, testResult)
 
-  let recordStarted () = fun (wasRun, log, result) -> ((wasRun, log, Result.incrementRunCount(result)), ())
-
-  let testMethod () = fun (_, log, result) -> ((true, log^"testMethod ", result), ())
+  let testMethod () = fun ((_, log), testResult) -> ((true, log^"testMethod "), testResult, ())
 
   let testBrokenMethod () = fun _ -> failwith "Broken method"
 
-  let return r = fun state -> (state, r)
+  let init = (initState, TestResult.init)
+  let recordStarted () = fun (state, testResult) -> (state, TestResult.testStarted(testResult), ())
+  let recordFailed () = fun (state, testResult) -> (state, TestResult.testFailed(testResult), "something wrong")
+  let return v = fun (state, testResult) -> (state, testResult, v)
   let ( >>= ) m f = fun s ->
-      let (s', v) = m s in
-      f v s'
+    try
+      let (s', r, v) = m s in
+      f v (s', r)
+    with _ -> recordFailed() s
   let run finalValueGetter main =
     let packagedProgram = begin
       let (let*) = ( >>= ) in
-      let* r = recordStarted() in
-      let* r = setUp r in
-      let* r = main r in
-      let* r = tearDown r in
-      finalValueGetter r
-    end in let (state, r) = packagedProgram init in r
+      let* v = recordStarted() in
+      let* v = setUp v in
+      let* v = main v in
+      let* v = tearDown v in
+      finalValueGetter v
+    end in let (state, testResult, v) = packagedProgram init in v
 end
