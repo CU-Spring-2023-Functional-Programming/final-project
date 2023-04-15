@@ -7,20 +7,19 @@ module WasRun = struct
 
   let getWasRun () = fun ((wasRun, log), testResult) -> ((wasRun, log), testResult, wasRun)
   let getLog () = fun ((wasRun, log), testResult) -> ((wasRun, log), testResult, log)
-  let getResult () = fun ((wasRun, log), testResult) -> ((wasRun, log), testResult, testResult)
 
   let testMethod () = fun ((_, log), testResult) -> ((true, log^"testMethod "), testResult, ())
 
   let testBrokenMethod () = fun _ -> failwith "Broken method"
 
-  let init = (initState, TestResult.init)
+  let getResult () = fun (state, testResult) -> (state, testResult, testResult)
   let recordStarted () = fun (state, testResult) -> (state, TestResult.testStarted(testResult), ())
   let recordFailed () = fun (state, testResult) -> (state, TestResult.testFailed(testResult), ())
   let return v = fun (state, testResult) -> (state, testResult, v)
   let ( >>= ) m f = fun s ->
     let (s', r, v) = m s in
     f v (s', r)
-  let run finalValueGetter main =
+  let run finalValueGetter main testResult =
     let packagedProgram = begin
       let (let*) = ( >>= ) in
       let* v = recordStarted() in
@@ -32,5 +31,5 @@ module WasRun = struct
       in
       let* v = tearDown v in
       finalValueGetter v
-    end in let (state, testResult, v) = packagedProgram init in v
+    end in let (state, testResult, v) = packagedProgram (initState, testResult) in v
 end

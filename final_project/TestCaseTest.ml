@@ -1,4 +1,5 @@
 #use "WasRun.ml";;
+#use "TestSuite.ml";;
 #use "utilities.ml";;
 
 module TestCaseTest = struct
@@ -12,17 +13,17 @@ module TestCaseTest = struct
     WasRun.return @@ TestResult.getSummary result
 
   let testTemplateMethod () = fun (state, testResult) ->
-    let result = WasRun.run WasRun.getLog WasRun.testMethod in
+    let result = WasRun.run WasRun.getLog WasRun.testMethod TestResult.init in
     let _ = asrt ("setUp testMethod tearDown " = result, "It should have run the correct methods. Methods called were: "^result) in
     (state, testResult, ())
 
   let testResult () = fun (state, testResult) ->
-    let result = WasRun.run resultSummaryGetter WasRun.testMethod in
+    let result = WasRun.run resultSummaryGetter WasRun.testMethod TestResult.init in
     let _ = asrt ("1 run, 0 failed" = result, "It should have returned one run. Returned summary was: "^result) in
     (state, testResult, ())
 
   let testFailedResult () = fun (state, testResult) ->
-    let result = WasRun.run resultSummaryGetter WasRun.testBrokenMethod in
+    let result = WasRun.run resultSummaryGetter WasRun.testBrokenMethod TestResult.init in
     let _ = asrt ("1 run, 1 failed" = result, "It should have returned a failed run. Returned summary was: "^result) in
     (state, testResult, ())
 
@@ -34,7 +35,19 @@ module TestCaseTest = struct
     let _ = asrt ("1 run, 1 failed" = summary, "It should have one run and one failed run. Returned summary was: "^summary) in
     (state, testResult, ())
 
+  let testSuite () = fun (state, testResult) ->
+    let main = begin
+      let (let*) = TestSuite.( >>= ) in
+      let* v = TestSuite.add (WasRun.run WasRun.getResult WasRun.testMethod) () in
+      TestSuite.add (WasRun.run WasRun.getResult WasRun.testBrokenMethod) v
+    end in
+    let result = TestSuite.run (TestSuite.getResult) (main) (TestResult.init) in
+    let summary = TestResult.getSummary result in
+    let _ = asrt ("2 run, 1 failed" = summary, "It should have two runs and one failed run. Returned summary was: "^summary) in
+    (state, testResult, ())
+
   let init = (initState, TestResult.init)
+  let getResult () = fun (state, testResult) -> (state, testResult, testResult)
   let recordStarted () = fun (state, testResult) -> (state, TestResult.testStarted(testResult), ())
   let recordFailed () = fun (state, testResult) -> (state, TestResult.testFailed(testResult), ())
   let return v = fun (state, testResult) -> (state, testResult, v)
@@ -46,11 +59,12 @@ module TestCaseTest = struct
       let (let*) = ( >>= ) in
       let* v = recordStarted() in
       let* v = setUp v in
-      let* v = fun s ->
-        try
-        	main v s
-        with _ -> recordFailed v s
-      in
+      let* v = main v in
+(*      let* v = fun s ->*)
+(*        try*)
+(*        	main v s*)
+(*        with _ -> recordFailed v s*)
+(*      in*)
       let* v = tearDown v in
       finalValueGetter v
     end in let (state, testResult, v) = packagedProgram init in v
