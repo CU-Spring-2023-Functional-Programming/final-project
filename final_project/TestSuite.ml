@@ -1,14 +1,14 @@
 module TestSuite = struct
   let initState = ([])
 
-  let add newTest = fun (tests, testResult) -> (newTest :: tests, testResult, ())
+  let add newTest = fun (tests, testResult) -> (newTest :: tests, testResult)
 
   let getResult = fun (state, testResult) -> testResult
   let ( >>= ) m f = fun s ->
-    let (s', r, v) = m s in
-    f v (s', r)
+    let (s', r) = m s in
+    f () (s', r)
   let run main testResult =
-    let (tests, testResult, ()) = main (initState, testResult) in
+    let (tests, testResult) = main (initState, testResult) in
     let testResult = List.fold_left (fun currentResults test -> let (state, res) = test currentResults in res) testResult tests in
     (tests, testResult)
 
@@ -17,5 +17,5 @@ module TestSuite = struct
     | _ ->
       let ( let* ) = ( >>= ) in
       let* _ = add (List.hd tests) in
-      fromTests (List.tl tests);;
+      fromTests (List.tl tests)
 end
