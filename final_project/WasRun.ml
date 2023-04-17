@@ -1,5 +1,5 @@
 module WasRun = struct
-  let getLog = fun (state, testResult) -> (state, testResult, state)
+  let getLog = fun (state, testResult) -> state
 
   let testMethod = fun (state, testResult) -> (state^"testMethod ", testResult, ())
   let testBrokenMethod = fun _ -> failwith "Broken method"
@@ -13,7 +13,7 @@ module WasRun = struct
   end)
 
   let tests = [
-    run "WasRun.testMethod" getResult testMethod;
-    run "WasRun.testBrokenMethod" getResult testBrokenMethod;
+    run "WasRun.testMethod" testMethod;
+    run "WasRun.testBrokenMethod" testBrokenMethod;
   ]
 end

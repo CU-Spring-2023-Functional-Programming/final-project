@@ -1,23 +1,20 @@
 module TestCaseTest = struct
   open TestUtilities
 
-  let resultSummaryGetter =
-    let (let*) = WasRun.( >>= ) in
-    let* result = WasRun.getResult in
-    WasRun.return @@ TestResult.getSummary result
+  let resultSummaryGetter finalInfo = TestResult.getSummary @@ WasRun.getResult finalInfo
 
   let testTemplateMethod = fun (state, testResult) ->
-    let result = WasRun.run "WasRun.testMethod" WasRun.getLog WasRun.testMethod TestResult.init in
+    let result = WasRun.getLog @@ WasRun.run "WasRun.testMethod" WasRun.testMethod TestResult.init in
     let _ = asrt ("setUp testMethod tearDown " = result, "It should have run the correct methods. Methods called were: "^result) in
     (state, testResult, ())
 
   let testResult = fun (state, testResult) ->
-    let result = WasRun.run "WasRun.testMethod" resultSummaryGetter WasRun.testMethod TestResult.init in
-    let _ = asrt ("1 run, 0 failed" = result, "It should have returned one run. Returned summary was: "^result) in
+    let summary = resultSummaryGetter @@ WasRun.run "WasRun.testMethod" WasRun.testMethod TestResult.init in
+    let _ = asrt ("1 run, 0 failed" = summary, "It should have returned one run. Returned summary was: "^summary) in
     (state, testResult, ())
 
   let testFailedResult = fun (state, testResult) ->
-    let result = WasRun.run "WasRun.testBrokenMethod" resultSummaryGetter WasRun.testBrokenMethod TestResult.init in
+    let result = resultSummaryGetter @@ WasRun.run "WasRun.testBrokenMethod" WasRun.testBrokenMethod TestResult.init in
     let _ = asrt ("1 run, 1 failed"^"\n\n"^"WasRun.testBrokenMethod: Broken method" = result, "It should have returned a failed run. Returned summary was: "^result) in
     (state, testResult, ())
 
@@ -32,16 +29,16 @@ module TestCaseTest = struct
     (state, testResult, ())
 
   let assertTestSuiteSummary main =
-    let result = TestSuite.run TestSuite.getResult main TestResult.init in
+    let result = TestSuite.getResult @@ TestSuite.run main TestResult.init in
       let summary = TestResult.getSummary result in
       let _ = asrt ("2 run, 1 failed"^"\n\n"^"WasRun.testBrokenMethod: Broken method" = summary, "It should have two runs and one failed run. Returned summary was: "^summary) in
       ()
 
   let testSuite = fun (state, testResult) ->
     let main = begin
-      let (let*) = TestSuite.( >>= ) in
-      let* _ = TestSuite.add (WasRun.run "WasRun.testMethod" WasRun.getResult WasRun.testMethod) in
-      TestSuite.add (WasRun.run "WasRun.testBrokenMethod" WasRun.getResult WasRun.testBrokenMethod)
+      let ( let* ) = TestSuite.( >>= ) in
+      let* _ = TestSuite.add (WasRun.run "WasRun.testMethod" WasRun.testMethod) in
+      TestSuite.add (WasRun.run "WasRun.testBrokenMethod" WasRun.testBrokenMethod)
     end in
     let _ = assertTestSuiteSummary main in
     (state, testResult, ())
@@ -60,11 +57,11 @@ module TestCaseTest = struct
   end)
 
   let tests = [
-    run "TestCaseTest.testTemplateMethod" getResult testTemplateMethod;
-    run "TestCaseTest.testResult" getResult testResult;
-    run "TestCaseTest.testFailedResultFormatting" getResult testFailedResultFormatting;
-    run "TestCaseTest.testFailedResult" getResult testFailedResult;
-    run "TestCaseTest.testSuite" getResult testSuite;
-    run "TestCaseTest.testSuiteFromTestCase" getResult testSuiteFromTestCase;
+    run "TestCaseTest.testTemplateMethod" testTemplateMethod;
+    run "TestCaseTest.testResult" testResult;
+    run "TestCaseTest.testFailedResultFormatting" testFailedResultFormatting;
+    run "TestCaseTest.testFailedResult" testFailedResult;
+    run "TestCaseTest.testSuite" testSuite;
+    run "TestCaseTest.testSuiteFromTestCase" testSuiteFromTestCase;
   ]
 end
