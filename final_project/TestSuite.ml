@@ -12,4 +12,11 @@ module TestSuite = struct
     let testResult = List.fold_left (fun currentResults test -> test currentResults) testResult tests in
     let (tests, testResult, v) = finalValueGetter (tests, testResult) in
     v
+
+  let rec fromTests tests = match tests with
+    | lastTest::[] -> add lastTest
+    | _ ->
+      let (let*) = ( >>= ) in
+      let* _ = add (List.hd tests) in
+      fromTests (List.tl tests);;
 end
