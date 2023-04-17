@@ -16,8 +16,8 @@ module TestCase(T: TEST_CASE) = struct
     let testResults = TestResult.testFailed testName errorMessage testResults in
     (state, testResults)
   let ( >>= ) m f = fun s ->
-    let (s', r) = m s in
-    f () (s', r)
+    let s' = m s in
+    f () s'
   let run testName main testResult =
     let packagedProgram = begin
       let (let*) = ( >>= ) in

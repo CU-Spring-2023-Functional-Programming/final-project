@@ -5,8 +5,8 @@ module TestSuite = struct
 
   let getResult = fun (state, testResult) -> testResult
   let ( >>= ) m f = fun s ->
-    let (s', r) = m s in
-    f () (s', r)
+    let s' = m s in
+    f () s'
   let run main testResult =
     let (tests, testResult) = main (initState, testResult) in
     let testResult = List.fold_left (fun currentResults test -> let (state, res) = test currentResults in res) testResult tests in
