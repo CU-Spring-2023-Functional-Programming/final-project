@@ -11,4 +11,9 @@ module WasRun = struct
     let setUp = fun (state, testResult) -> (state^"setUp ", testResult, ())
     let tearDown = fun (state, testResult) -> (state^"tearDown ", testResult, ())
   end)
+
+  let tests = [
+    run "WasRun.testMethod" getResult testMethod;
+    run "WasRun.testBrokenMethod" getResult testBrokenMethod;
+  ]
 end

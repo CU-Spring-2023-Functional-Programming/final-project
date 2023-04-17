@@ -31,15 +31,24 @@ module TestCaseTest = struct
     let _ = TestUtilities.asrt ("1 run, 1 failed"^"\n\n"^arbitraryTestName^": "^arbitraryErrorMessage = summary, "Returned summary was: "^summary) in
     (state, testResult, ())
 
+  let assertTestSuiteSummary main =
+    let result = TestSuite.run TestSuite.getResult main TestResult.init in
+      let summary = TestResult.getSummary result in
+      let _ = asrt ("2 run, 1 failed"^"\n\n"^"WasRun.testBrokenMethod: Broken method" = summary, "It should have two runs and one failed run. Returned summary was: "^summary) in
+      ()
+
   let testSuite = fun (state, testResult) ->
     let main = begin
       let (let*) = TestSuite.( >>= ) in
       let* _ = TestSuite.add (WasRun.run "WasRun.testMethod" WasRun.getResult WasRun.testMethod) in
       TestSuite.add (WasRun.run "WasRun.testBrokenMethod" WasRun.getResult WasRun.testBrokenMethod)
     end in
-    let result = TestSuite.run TestSuite.getResult main TestResult.init in
-    let summary = TestResult.getSummary result in
-    let _ = asrt ("2 run, 1 failed"^"\n\n"^"WasRun.testBrokenMethod: Broken method" = summary, "It should have two runs and one failed run. Returned summary was: "^summary) in
+    let _ = assertTestSuiteSummary main in
+    (state, testResult, ())
+
+  let testSuiteFromTestCase = fun (state, testResult) ->
+    let main = TestSuite.fromTests WasRun.tests in
+    let _ = assertTestSuiteSummary main in
     (state, testResult, ())
 
   include TestCase(struct
@@ -49,4 +58,13 @@ module TestCaseTest = struct
     let setUp = fun (state, testResult) -> (state, testResult, ())
     let tearDown = fun (state, testResult) -> (state, testResult, ())
   end)
+
+  let tests = [
+    run "TestCaseTest.testTemplateMethod" getResult testTemplateMethod;
+    run "TestCaseTest.testResult" getResult testResult;
+    run "TestCaseTest.testFailedResultFormatting" getResult testFailedResultFormatting;
+    run "TestCaseTest.testFailedResult" getResult testFailedResult;
+    run "TestCaseTest.testSuite" getResult testSuite;
+    run "TestCaseTest.testSuiteFromTestCase" getResult testSuiteFromTestCase;
+  ]
 end
