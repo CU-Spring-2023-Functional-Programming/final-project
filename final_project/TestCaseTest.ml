@@ -18,6 +18,11 @@ module TestCaseTest = struct
     let _ = asrt ("1 run, 1 failed"^"\n\n"^"WasRun.testBrokenMethod: Broken method" = result, "It should have returned a failed run. Returned summary was: "^result) in
     (state, testResult)
 
+  let testFailedSetup = fun (state, testResult) ->
+    let result = resultSummaryGetter @@ FailedSetup.run "TestCaseTest -> FailedSetup.testMethod" FailedSetup.testMethod TestResult.init in
+    let _ = asrt ("1 run, 1 failed"^"\n\n"^"TestCaseTest -> FailedSetup.testMethod: Setup Failure: Broken setup" = result, "It should have returned a failed run. Returned summary was: "^result) in
+    (state, testResult)
+
   let testFailedResultFormatting = fun (state, testResult) ->
     let arbitraryTestName = "ArbitraryTestName" in
     let arbitraryErrorMessage = "ArbitraryErrorMessage" in
@@ -61,6 +66,7 @@ module TestCaseTest = struct
     run "TestCaseTest.testResult" testResult;
     run "TestCaseTest.testFailedResultFormatting" testFailedResultFormatting;
     run "TestCaseTest.testFailedResult" testFailedResult;
+    run "TestCaseTest.testFailedSetup" testFailedSetup;
     run "TestCaseTest.testSuite" testSuite;
     run "TestCaseTest.testSuiteFromTestCase" testSuiteFromTestCase;
   ]

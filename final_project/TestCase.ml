@@ -22,13 +22,17 @@ module TestCase(T: TEST_CASE) = struct
     let packagedProgram = begin
       let (let*) = ( >>= ) in
       let* _ = recordStarted in
-      let* _ = T.setUp in
-      let* v = fun s ->
+      let* _ = fun s ->
         try
-        	main s
+        	let s' = T.setUp s in
+          try
+            main s'
+          with
+            | Failure (message) -> recordFailed testName message s'
+            | _ -> recordFailed testName "Unknown error" s'
         with
-          | Failure (message) -> recordFailed testName message s
-          | _ -> recordFailed testName "Unknown error" s
+        	| Failure (message) -> recordFailed testName ("Setup Failure: "^message) s
+          | _ -> recordFailed testName ("Setup Failure: Unknown error") s
       in
       T.tearDown
     end in let (state, testResult) = packagedProgram (T.initState, testResult) in

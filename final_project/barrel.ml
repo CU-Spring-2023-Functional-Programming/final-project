@@ -3,4 +3,5 @@
 #use "TestSuite.ml";;
 #use "TestCase.ml";;
 #use "WasRun.ml";;
+#use "FailedSetup.ml";;
 #use "TestCaseTest.ml";;
