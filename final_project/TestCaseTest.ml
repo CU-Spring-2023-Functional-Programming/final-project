@@ -1,7 +1,7 @@
 module TestCaseTest = struct
   open TestUtilities
 
-  let resultSummaryGetter finalInfo = TestResult.getSummary @@ WasRun.getResult finalInfo
+  let resultSummaryGetter getResult finalInfo = TestResult.getSummary @@ getResult finalInfo
 
   let testTemplateMethod = fun (state, testResult) ->
     let result = WasRun.getLog @@ WasRun.run "WasRun.testMethod" WasRun.testMethod TestResult.init in
@@ -9,18 +9,28 @@ module TestCaseTest = struct
     (state, testResult)
 
   let testResult = fun (state, testResult) ->
-    let summary = resultSummaryGetter @@ WasRun.run "WasRun.testMethod" WasRun.testMethod TestResult.init in
+    let summary = resultSummaryGetter WasRun.getResult @@ WasRun.run "WasRun.testMethod" WasRun.testMethod TestResult.init in
     let _ = asrt ("1 run, 0 failed" = summary, "It should have returned one run. Returned summary was: "^summary) in
     (state, testResult)
 
   let testFailedResult = fun (state, testResult) ->
-    let result = resultSummaryGetter @@ WasRun.run "WasRun.testBrokenMethod" WasRun.testBrokenMethod TestResult.init in
+    let result = resultSummaryGetter WasRun.getResult @@ WasRun.run "WasRun.testBrokenMethod" WasRun.testBrokenMethod TestResult.init in
     let _ = asrt ("1 run, 1 failed"^"\n\n"^"WasRun.testBrokenMethod: Broken method" = result, "It should have returned a failed run. Returned summary was: "^result) in
     (state, testResult)
 
+  let testTeardownCalledAfterFailedResult = fun (state, testResult) ->
+    let result = WasRun.getLog @@ WasRun.run "TestCaseTest -> WasRun.testBrokenMethod" WasRun.testBrokenMethod TestResult.init in
+    let _ = asrt ("setUp tearDown " = result, "It should have called setUp and tearDown. Returned summary was: "^result) in
+    (state, testResult)
+
   let testFailedSetup = fun (state, testResult) ->
-    let result = resultSummaryGetter @@ FailedSetup.run "TestCaseTest -> FailedSetup.testMethod" FailedSetup.testMethod TestResult.init in
+    let result = resultSummaryGetter FailedSetup.getResult @@ FailedSetup.run "TestCaseTest -> FailedSetup.testMethod" FailedSetup.testMethod TestResult.init in
     let _ = asrt ("1 run, 1 failed"^"\n\n"^"TestCaseTest -> FailedSetup.testMethod: Setup Failure: Broken setup" = result, "It should have returned a failed run. Returned summary was: "^result) in
+    (state, testResult)
+
+  let testTeardownCalledAfterFailedSetup = fun (state, testResult) ->
+    let result = FailedSetup.getLog @@ FailedSetup.run "TestCaseTest -> FailedSetup.testBrokenMethod" FailedSetup.testMethod TestResult.init in
+    let _ = asrt ("tearDown " = result, "It should have called tearDown. Returned summary was: "^result) in
     (state, testResult)
 
   let testFailedResultFormatting = fun (state, testResult) ->
@@ -66,7 +76,9 @@ module TestCaseTest = struct
     run "TestCaseTest.testResult" testResult;
     run "TestCaseTest.testFailedResultFormatting" testFailedResultFormatting;
     run "TestCaseTest.testFailedResult" testFailedResult;
+    run "TestCaseTest.testTeardownCalledAfterFailedResult" testTeardownCalledAfterFailedResult;
     run "TestCaseTest.testFailedSetup" testFailedSetup;
+    run "TestCaseTest.testTeardownCalledAfterFailedSetup" testTeardownCalledAfterFailedSetup;
     run "TestCaseTest.testSuite" testSuite;
     run "TestCaseTest.testSuiteFromTestCase" testSuiteFromTestCase;
   ]
